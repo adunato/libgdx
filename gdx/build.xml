@@ -1,0 +1,32 @@
+<project name="gdx" default="deploy.local" basedir=".">
+
+	<!-- set global properties for this build -->
+	<property name="jar.name" value="${ant.project.name}.jar"/>
+	<property name="sources.name" value="${ant.project.name}-sources.jar"/>
+	<property name="libs.dir" value="../../dynasty-ext-libs"/>
+	<property name="build.dir" value="bin"/>
+	<property name="src.dir" value="src"/>	
+
+	<!-- set variable for external lib directory 
+	(typically set up as external project within project) -->
+	<property name="lib.dir" value="lib"/>
+	
+	<target name="-init" depends="clean">
+		<echo>Creating temporary folders...</echo>
+		<mkdir dir="${build.dir}"/>
+	</target>
+	
+	<target name="clean" description="Clean up">
+		<echo>Cleaning up...</echo>
+		<delete dir="${build.dir}"/>
+	</target>
+	
+	<target name="deploy.local" description="Deploy to local webserver">
+		<echo>Deleting files from local webserver...</echo>
+		<delete dir="${libs.dir}/${jar.name}"/>
+		<delete dir="${libs.dir}/${sources.name}"/>
+		<echo>Copying files to local webserver...</echo>
+		<jar destfile="${libs.dir}/${jar.name}" basedir="${build.dir}"></jar>
+		<jar destfile="${libs.dir}/${sources.name}" basedir="${src.dir}"></jar>
+	</target>
+</project>

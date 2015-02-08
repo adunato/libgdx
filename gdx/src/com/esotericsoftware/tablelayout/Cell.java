@@ -27,6 +27,9 @@
 
 package com.esotericsoftware.tablelayout;
 
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.esotericsoftware.tablelayout.Value.FixedValue;
 
 import static com.esotericsoftware.tablelayout.BaseTableLayout.*;
@@ -55,6 +58,12 @@ public class Cell<C> {
 	int column, row;
 	int cellAboveIndex = -1;
 	float computedPadTop, computedPadLeft, computedPadBottom, computedPadRight;
+	
+	private Drawable background;
+	private boolean drawPaddingRight;
+	private boolean drawPaddingLeft;
+	private boolean drawPaddingTop;
+	private boolean drawPaddingBottom;
 
 	public void setLayout (BaseTableLayout layout) {
 		this.layout = layout;
@@ -973,5 +982,39 @@ public class Cell<C> {
 		colspan = 1;
 		uniformX = null;
 		uniformY = null;
+	}
+	
+	/** Called to draw the background, before clipping is applied (if enabled). Default implementation draws the background
+	 * drawable. */
+	public void drawBackground (Batch batch, float parentAlpha, float x, float y, Color color) {
+		if (getBackground() == null) return;
+		//batch.setColor(color.r, color.g, color.b, color.a * parentAlpha);
+		float drawPaddingRight=0;
+		float drawPaddingLeft=0;
+		float drawPaddingTop=0;
+		float drawPaddingBottom=0;
+		if(this.drawPaddingRight)
+			drawPaddingRight = getPadRight()+1;
+		if(this.drawPaddingLeft)
+			drawPaddingLeft = getPadLeft()+1;
+		if(this.drawPaddingTop)
+			drawPaddingTop = getPadTop();
+		if(this.drawPaddingBottom)
+			drawPaddingBottom = getPadBottom();
+		
+		getBackground().draw(batch, x-drawPaddingLeft+(getPrefWidth()-getMaxWidth())/2, y+(getPrefHeight()-getMaxHeight())/2, getMaxWidth()+drawPaddingLeft+drawPaddingRight, getMaxHeight());
+	}
+
+	public Drawable getBackground () {
+		return background;
+	}
+
+	public Cell<C> setBackground (Drawable background,boolean drawPaddingRight, boolean drawPaddingLeft, boolean drawPaddingTop, boolean drawPaddingBottom) {
+		this.background = background;
+		this.drawPaddingRight = drawPaddingRight;
+		this.drawPaddingLeft = drawPaddingLeft;
+		this.drawPaddingTop = drawPaddingTop;
+		this.drawPaddingBottom = drawPaddingBottom;
+		return this;
 	}
 }

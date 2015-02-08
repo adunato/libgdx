@@ -31,9 +31,10 @@ import com.esotericsoftware.tablelayout.BaseTableLayout.Debug;
 import com.esotericsoftware.tablelayout.Cell;
 import com.esotericsoftware.tablelayout.Toolkit;
 import com.esotericsoftware.tablelayout.Value;
-
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -42,6 +43,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import com.badlogic.gdx.scenes.scene2d.utils.Align;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.SnapshotArray;
 
 import java.util.List;
 
@@ -516,4 +518,92 @@ public class Table extends WidgetGroup {
 			if (actor instanceof Group) drawDebug(((Group)actor).getChildren(), batch);
 		}
 	}
+	
+	/** Draws all children. {@link #applyTransform(Batch, Matrix4)} should be called before and {@link #resetTransform(Batch)} after
+	 * this method if {@link #setTransform(boolean) transform} is true. If {@link #setTransform(boolean) transform} is false these
+	 * methods don't need to be called, children positions are temporarily offset by the group position when drawn. This method
+	 * avoids drawing children completely outside the {@link #setCullingArea(Rectangle) culling area}, if set. */
+	protected void drawChildren (Batch batch, float parentAlpha) {
+		parentAlpha *= this.getColor().a;
+		SnapshotArray<Actor> children = this.children;
+		Actor[] actors = children.begin();
+		Rectangle cullingArea = this.cullingArea;
+		if (cullingArea != null) {
+			// Draw children only if inside culling area.
+			float cullLeft = cullingArea.x;
+			float cullRight = cullLeft + cullingArea.width;
+			float cullBottom = cullingArea.y;
+			float cullTop = cullBottom + cullingArea.height;
+			if (transform) {
+				for (int i = 0, n = children.size; i < n; i++) {
+					Actor child = actors[i];
+					if (!child.isVisible()) continue;
+					float cx = child.getX(), cy = child.getY();
+					if (cx <= cullRight && cy <= cullTop && cx + child.getWidth() >= cullLeft && cy + child.getHeight() >= cullBottom){
+						Cell cell = getCell(child);
+						if(cell != null)
+							cell.drawBackground(batch, parentAlpha, child.getX(), child.getY(), getColor());
+						child.draw(batch, parentAlpha);
+					}
+				}
+				batch.flush();
+			} else {
+				// No transform for this group, offset each child.
+				float offsetX = getX(), offsetY = getY();
+				setX(0);
+				setY(0);
+				for (int i = 0, n = children.size; i < n; i++) {
+					Actor child = actors[i];
+					if (!child.isVisible()) continue;
+					float cx = child.getX(), cy = child.getY();
+					if (cx <= cullRight && cy <= cullTop && cx + child.getWidth() >= cullLeft && cy + child.getHeight() >= cullBottom) {
+						Cell cell = getCell(child);
+						if(cell != null)
+							cell.drawBackground(batch, parentAlpha, child.getX(), child.getY(), getColor());
+						child.setX(cx + offsetX);
+						child.setY(cy + offsetY);
+						child.draw(batch, parentAlpha);
+						child.setX(cx);
+						child.setY(cy);
+					}
+				}
+				setX(offsetX);
+				setY(offsetY);
+			}
+		} else {
+			// No culling, draw all children.
+			if (transform) {
+				for (int i = 0, n = children.size; i < n; i++) {
+					Actor child = actors[i];
+					if (!child.isVisible()) continue;
+					Cell cell = getCell(child);
+					if(cell != null)
+						cell.drawBackground(batch, parentAlpha, child.getX(), child.getY(), getColor());				
+					child.draw(batch, parentAlpha);
+				}
+				batch.flush();
+			} else {
+				// No transform for this group, offset each child.
+				float offsetX = getX(), offsetY = getY();
+				setX(0);
+				setY(0);
+				for (int i = 0, n = children.size; i < n; i++) {
+					Actor child = actors[i];
+					if (!child.isVisible()) continue;
+					float cx = child.getX(), cy = child.getY();
+					child.setX(cx + offsetX);
+					child.setY(cy + offsetY);
+					Cell cell = getCell(child);
+					if(cell != null)
+						cell.drawBackground(batch, parentAlpha, child.getX(), child.getY(), getColor());					
+					child.draw(batch, parentAlpha);
+					child.setX(cx);
+					child.setY(cy);
+				}
+				setX(offsetX);
+				setY(offsetY);
+			}
+		}
+		children.end();
+	}	
 }
